@@ -1,0 +1,28 @@
+# Robots.txt for RAIH E-Commerce
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /checkout
+Disallow: /account/
+Disallow: /auth/
+
+# Sitemap
+Sitemap: https://raih.com/sitemap.xml
+
+# Crawl-delay (seconds between requests)
+Crawl-delay: 1
+
+# Popular search engine bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /

@@ -1,0 +1,154 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and user management
+model User {
+  id           Int               @id @default(autoincrement())
+  email        String            @unique
+  isValidEmail Int               @default(0) // 0: Invalid, 1: Valid
+  otpCode      String?           // 6 digit verification code
+  name         String?
+  password     String            // Bcrypt hashed
+  role         String?           // ADMIN / CUSTOMER
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  
+  // Relations
+  reviews      ProductReview[]
+  payments     payment[]
+  
+  @@map("users")
+}
+
+// Category model for product categorization
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Relations
+  products  Product[]
+  
+  @@map("categories")
+}
+
+// Product model for e-commerce items
+model Product {
+  id         Int                   @id @default(autoincrement())
+  name       String
+  slug       String?               // SEO-friendly URL
+  color      String
+  price      Decimal               @db.Decimal(10, 2)
+  categoryId Int
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  
+  // Relations
+  category      Category               @relation(fields: [categoryId], references: [id])
+  images        Image[]
+  reviews       ProductReview[]
+  stars         productStar[]
+  starPercents  productStarPercent[]
+  payments      payment[]
+  
+  @@index([categoryId])
+  @@index([slug])
+  @@map("products")
+}
+
+// Image model for product images
+model Image {
+  id        Int      @id @default(autoincrement())
+  url       String   // Path or URL to image
+  productId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@index([productId])
+  @@map("images")
+}
+
+// ProductReview model for customer reviews
+model ProductReview {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  starNumber Int      // Rating 1-5
+  productId  Int
+  comment    String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  user       User     @relation(fields: [userId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId]) // One review per user per product
+  @@index([productId])
+  @@index([userId])
+  @@map("product_reviews")
+}
+
+// productStar model for tracking total stars
+model productStar {
+  id            Int      @id @default(autoincrement())
+  productId     Int
+  receivedStars Int      @default(0) // Total accumulated stars
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([productId])
+  @@map("product_stars")
+}
+
+// productStarPercent model for rating distribution
+model productStarPercent {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  times     Int      @default(0) // Counter for how many times this rating was given
+  star      Int      // Rating value (1-5)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([productId, star])
+  @@index([productId])
+  @@map("product_star_percents")
+}
+
+// payment model for transaction records
+model payment {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  userId    Int
+  amount    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([productId])
+  @@index([createdAt])
+  @@map("payments")
+}
